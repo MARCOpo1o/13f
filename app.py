@@ -15,7 +15,9 @@ Best Practices:
 - RESTful routes
 """
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 from services import SECClient, parse_13f_xml, compare_filings
 from services.comparator import calculate_summary
 import config
@@ -24,10 +26,60 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
 
+def login_required(f):
+    """
+    Decorator to protect routes requiring authentication.
+    Redirects to login page if user is not authenticated.
+    """
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('authenticated'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """
+    Handle user login with password authentication.
+    
+    GET: Display login form
+    POST: Verify password and create session
+    """
+    if request.method == 'POST':
+        password = request.form.get('password', '')
+        
+        # Verify password against secure hash (never store passwords in plaintext!)
+        if check_password_hash(config.PASSWORD_HASH, password):
+            session['authenticated'] = True
+            session.permanent = True  # Session persists across browser restarts
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error="Incorrect password. Please try again.")
+    
+    # If already logged in, redirect to home
+    if session.get('authenticated'):
+        return redirect(url_for('index'))
+    
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """
+    Log out the user by clearing the session.
+    """
+    session.clear()
+    return redirect(url_for('login'))
+
+
 @app.route('/')
+@login_required
 def index():
     """
     Render the home page with CIK input form.
+    Requires authentication.
     
     Returns:
         HTML template with input form and examples
@@ -36,9 +88,11 @@ def index():
 
 
 @app.route('/compare', methods=['POST'])
+@login_required
 def compare():
     """
     Process CIK input, fetch filings, and display comparison results.
+    Requires authentication.
     
     Returns:
         HTML template with comparison results or error page

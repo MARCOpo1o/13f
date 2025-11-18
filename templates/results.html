@@ -9,8 +9,11 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>📊 13F Comparison Results</h1>
-            <p>CIK: {{ cik }}</p>
+            <div class="header-content">
+                <h1>📊 13F Comparison Results</h1>
+                <p>CIK: {{ cik }}</p>
+            </div>
+            <a href="/logout" class="logout-btn">🔓 Logout</a>
         </header>
 
         <div class="metadata-card">
@@ -119,6 +122,7 @@
         </div>
 
         <footer>
+            <p>Built by <strong>Marco Qin</strong> with industry guidance from <strong>Stephen</strong></p>
             <p>Data from SEC EDGAR • Values in thousands ($K)</p>
         </footer>
     </div>

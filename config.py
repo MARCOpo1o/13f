@@ -24,7 +24,12 @@ HOST = "0.0.0.0"  # Allow external connections
 PORT = 5000
 
 # Flask Settings
-SECRET_KEY = "dev-secret-key-change-in-production"  # Change for production
+SECRET_KEY = "phantomfriends-secret-key-2024"  # Used for session encryption
+
+# Authentication
+# Password hash for login verification (password is NOT stored in plaintext)
+# Original password known only to authorized users
+PASSWORD_HASH = "scrypt:32768:8:1$f3GtbqDsdwPe6gHI$90a8375a17263ea7eb5975f502ca275dcc8fb967a836079d05a5cf5bf854b835f84b71da384853135e0517446f81e9cb71e157a85ec6752b4228c3e6562105c1"
 
 # Data Display Settings
 MAX_DISPLAY_ROWS = 1000  # Maximum rows to show in results

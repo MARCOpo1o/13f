@@ -212,9 +212,9 @@ lsof -ti:5000 | xargs kill -9
 
 ## Credits
 
-Built with ❤️ following software engineering best practices.
+**Built by Marco Qin** with industry guidance from **Stephen**.
 
-Data from [SEC EDGAR](https://www.sec.gov).
+Data sourced from [SEC EDGAR](https://www.sec.gov).
 
 ## License
 
