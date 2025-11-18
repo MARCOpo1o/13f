@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13F Filing Comparator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 13F Filing Comparator</h1>
+            <p>Compare hedge fund holdings between quarters</p>
+        </header>
+
+        <div class="card">
+            <h2>Enter Fund CIK</h2>
+            
+            {% if error %}
+            <div class="error-message">
+                ⚠️ {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/compare" class="input-form">
+                <div class="form-group">
+                    <label for="cik">Central Index Key (CIK):</label>
+                    <input 
+                        type="text" 
+                        id="cik" 
+                        name="cik" 
+                        placeholder="e.g., 0001346824"
+                        required
+                        pattern="[0-9-]+"
+                        title="CIK should be numeric"
+                        autofocus
+                    >
+                    <small>10-digit SEC identifier for the fund</small>
+                </div>
+
+                <button type="submit" class="btn-primary">
+                    Compare Latest Filings
+                </button>
+            </form>
+
+            <div class="examples">
+                <h3>Example CIKs:</h3>
+                <ul>
+                    {% for name, cik in examples.items() %}
+                    <li>
+                        <strong>{{ name }}:</strong> 
+                        <code class="cik-example" onclick="document.getElementById('cik').value='{{ cik }}'">
+                            {{ cik }}
+                        </code>
+                        {% if cik.startswith('Find') %}
+                        <span class="help-text">(Search at sec.gov)</span>
+                        {% else %}
+                        <span class="help-text">(Click to use)</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h3>How to find a CIK:</h3>
+                <ol>
+                    <li>Go to <a href="https://www.sec.gov/edgar/searchedgar/companysearch" target="_blank">SEC Company Search</a></li>
+                    <li>Search for the fund name (e.g., "Perceptive Advisors")</li>
+                    <li>Click on the fund name in results</li>
+                    <li>Look for the CIK in the page header or URL</li>
+                    <li>Make sure they file 13F-HR reports</li>
+                </ol>
+            </div>
+        </div>
+
+        <footer>
+            <p>Data from <a href="https://www.sec.gov" target="_blank">SEC EDGAR</a></p>
+        </footer>
+    </div>
+
+    <script>
+        // Show loading state on form submit
+        document.querySelector('form').addEventListener('submit', function() {
+            const button = this.querySelector('button');
+            button.disabled = true;
+            button.textContent = '⏳ Fetching data from SEC...';
+        });
+
+        // Make example CIKs clickable
+        document.querySelectorAll('.cik-example').forEach(el => {
+            el.style.cursor = 'pointer';
+        });
+    </script>
+</body>
+</html>
+

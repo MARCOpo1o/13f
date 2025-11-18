@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>13F Comparison Results - CIK {{ cik }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>📊 13F Comparison Results</h1>
+            <p>CIK: {{ cik }}</p>
+        </header>
+
+        <div class="metadata-card">
+            <div class="metadata-item">
+                <span class="label">Current Filing:</span>
+                <span class="value">{{ metadata.current_date }}</span>
+                <span class="sublabel">(Report Date: {{ metadata.current_report_date }})</span>
+            </div>
+            <div class="metadata-item">
+                <span class="label">Prior Filing:</span>
+                <span class="value">{{ metadata.prior_date }}</span>
+                <span class="sublabel">(Report Date: {{ metadata.prior_report_date }})</span>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <h2>Summary Statistics</h2>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value">{{ summary.total_positions }}</div>
+                    <div class="stat-label">Total Positions</div>
+                </div>
+                <div class="stat-box stat-new">
+                    <div class="stat-value">{{ summary.new_positions }}</div>
+                    <div class="stat-label">New</div>
+                </div>
+                <div class="stat-box stat-exited">
+                    <div class="stat-value">{{ summary.exited_positions }}</div>
+                    <div class="stat-label">Exited</div>
+                </div>
+                <div class="stat-box stat-increased">
+                    <div class="stat-value">{{ summary.increased_positions }}</div>
+                    <div class="stat-label">Increased</div>
+                </div>
+                <div class="stat-box stat-decreased">
+                    <div class="stat-value">{{ summary.decreased_positions }}</div>
+                    <div class="stat-label">Decreased</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value">{{ summary.unchanged_positions }}</div>
+                    <div class="stat-label">Unchanged</div>
+                </div>
+            </div>
+            <div class="total-value">
+                Total Current Value: ${{ "{:,.0f}".format(summary.total_current_value * 1000) }}
+            </div>
+        </div>
+
+        <div class="table-controls">
+            <button onclick="filterStatus('all')" class="filter-btn active" data-filter="all">All</button>
+            <button onclick="filterStatus('NEW')" class="filter-btn" data-filter="NEW">New</button>
+            <button onclick="filterStatus('EXITED')" class="filter-btn" data-filter="EXITED">Exited</button>
+            <button onclick="filterStatus('INCREASED')" class="filter-btn" data-filter="INCREASED">Increased</button>
+            <button onclick="filterStatus('DECREASED')" class="filter-btn" data-filter="DECREASED">Decreased</button>
+        </div>
+
+        <div class="table-container">
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th onclick="sortTable(0)">Company ↕</th>
+                        <th onclick="sortTable(1)">Type</th>
+                        <th onclick="sortTable(2)">CUSIP</th>
+                        <th onclick="sortTable(3)" class="num">Prior Shares ↕</th>
+                        <th onclick="sortTable(4)" class="num">Current Shares ↕</th>
+                        <th onclick="sortTable(5)" class="num">Change ↕</th>
+                        <th onclick="sortTable(6)" class="num">Prior Value ($K) ↕</th>
+                        <th onclick="sortTable(7)" class="num">Current Value ($K) ↕</th>
+                        <th onclick="sortTable(8)" class="num">% Change ↕</th>
+                        <th onclick="sortTable(9)">Status ↕</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in comparison %}
+                    <tr class="status-{{ row.status }}">
+                        <td class="company-name">{{ row.issuer }}</td>
+                        <td>{{ row.titleOfClass }}</td>
+                        <td><code>{{ row.cusip }}</code></td>
+                        <td class="num">{{ "{:,}".format(row.prior_shares) if row.prior_shares else '—' }}</td>
+                        <td class="num">{{ "{:,}".format(row.current_shares) if row.current_shares else '—' }}</td>
+                        <td class="num change-{{ 'pos' if row.delta_shares > 0 else ('neg' if row.delta_shares < 0 else 'zero') }}">
+                            {{ "{:+,}".format(row.delta_shares) if row.delta_shares else '—' }}
+                        </td>
+                        <td class="num">{{ "{:,}".format(row.prior_value) if row.prior_value else '—' }}</td>
+                        <td class="num">{{ "{:,}".format(row.current_value) if row.current_value else '—' }}</td>
+                        <td class="num change-{{ 'pos' if row.percent_change and row.percent_change > 0 else ('neg' if row.percent_change and row.percent_change < 0 else 'zero') }}">
+                            {% if row.percent_change is not none %}
+                                {{ "{:+.1f}".format(row.percent_change) }}%
+                            {% else %}
+                                NEW
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge badge-{{ row.status.lower() }}">
+                                {{ row.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <a href="/" class="btn-secondary">← Compare Another Fund</a>
+        </div>
+
+        <footer>
+            <p>Data from SEC EDGAR • Values in thousands ($K)</p>
+        </footer>
+    </div>
+
+    <script>
+        // Filter table by status
+        let currentFilter = 'all';
+        function filterStatus(status) {
+            currentFilter = status;
+            const rows = document.querySelectorAll('#results-table tbody tr');
+            
+            rows.forEach(row => {
+                if (status === 'all') {
+                    row.style.display = '';
+                } else {
+                    row.style.display = row.classList.contains('status-' + status) ? '' : 'none';
+                }
+            });
+
+            // Update active button
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === status) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        // Sort table by column
+        let sortDirection = 1;
+        function sortTable(colIndex) {
+            const table = document.getElementById('results-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Filter visible rows only
+            const visibleRows = rows.filter(row => row.style.display !== 'none');
+            
+            visibleRows.sort((a, b) => {
+                let aVal = a.cells[colIndex].textContent.trim();
+                let bVal = b.cells[colIndex].textContent.trim();
+                
+                // Handle numeric columns
+                if (colIndex >= 3 && colIndex <= 8) {
+                    aVal = parseFloat(aVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
+                    bVal = parseFloat(bVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
+                    return (aVal - bVal) * sortDirection;
+                }
+                
+                // Handle text columns
+                return aVal.localeCompare(bVal) * sortDirection;
+            });
+            
+            sortDirection *= -1;
+            
+            // Re-append rows in new order
+            visibleRows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+</body>
+</html>
+
