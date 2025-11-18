@@ -2,6 +2,10 @@
 
 A clean, production-ready web application for comparing hedge fund 13F filings.
 
+## 🚀 Live Demo
+
+**Try it now:** [https://13f-six.vercel.app/](https://13f-six.vercel.app/)
+
 ## Features
 
 - **Enter any CIK** → Automatically fetches latest 2 filings from SEC
@@ -77,6 +81,10 @@ Returns JSON comparison data.
 
 **Example:**
 ```bash
+# Live API
+curl https://13f-six.vercel.app/api/compare/0001346824
+
+# Local development
 curl http://localhost:5000/api/compare/0001346824
 ```
 
@@ -123,13 +131,25 @@ Edit `config.py` to customize:
 
 ## Deployment
 
-### Local
+### ✅ Production (Currently Hosted)
+
+**Live on Vercel:** [https://13f-six.vercel.app/](https://13f-six.vercel.app/)
+
+This app is deployed and running on Vercel with automatic deployments from GitHub.
+
+### Local Development
 
 ```bash
 python app.py
+# Visit http://localhost:5000
 ```
 
-### Production
+### Deploy Your Own
+
+**Vercel:**
+1. Fork this repo
+2. Connect to Vercel
+3. Auto-deploys on push
 
 **Heroku:**
 ```bash
@@ -141,10 +161,6 @@ git push heroku main
 **Railway:**
 - Connect your GitHub repo
 - Auto-deploys on push
-
-**Vercel:**
-- Add `vercel.json` configuration
-- Deploy via Vercel CLI
 
 ## Development
 
