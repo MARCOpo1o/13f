@@ -89,22 +89,26 @@
                         <th onclick="sortTable(6)" class="num">Prior Value ($K) ↕</th>
                         <th onclick="sortTable(7)" class="num">Current Value ($K) ↕</th>
                         <th onclick="sortTable(8)" class="num">% Change ↕</th>
-                        <th onclick="sortTable(9)">Status ↕</th>
+                        <th onclick="sortTable(9)" class="num">Prior % PF ↕</th>
+                        <th onclick="sortTable(10)" class="num">Curr % PF ↕</th>
+                        <th onclick="sortTable(11)" class="num">Δ % PF ↕</th>
+                        <th onclick="sortTable(12)">Status ↕</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in comparison %}
+                    {% if row.status != 'TOTAL' %}
                     <tr class="status-{{ row.status }}">
                         <td class="company-name">{{ row.issuer }}</td>
                         <td>{{ row.titleOfClass }}</td>
                         <td><code>{{ row.cusip }}</code></td>
-                        <td class="num">{{ "{:,}".format(row.prior_shares) if row.prior_shares else '—' }}</td>
-                        <td class="num">{{ "{:,}".format(row.current_shares) if row.current_shares else '—' }}</td>
-                        <td class="num change-{{ 'pos' if row.delta_shares > 0 else ('neg' if row.delta_shares < 0 else 'zero') }}">
-                            {{ "{:+,}".format(row.delta_shares) if row.delta_shares else '—' }}
+                        <td class="num">{{ "{:,}".format(row.prior_shares) if row.prior_shares is not none else '—' }}</td>
+                        <td class="num">{{ "{:,}".format(row.current_shares) if row.current_shares is not none else '—' }}</td>
+                        <td class="num change-{{ 'pos' if row.delta_shares and row.delta_shares > 0 else ('neg' if row.delta_shares and row.delta_shares < 0 else 'zero') }}">
+                            {{ "{:+,}".format(row.delta_shares) if row.delta_shares is not none else '—' }}
                         </td>
-                        <td class="num">{{ "{:,}".format(row.prior_value) if row.prior_value else '—' }}</td>
-                        <td class="num">{{ "{:,}".format(row.current_value) if row.current_value else '—' }}</td>
+                        <td class="num">{{ "{:,}".format(row.prior_value) if row.prior_value is not none else '—' }}</td>
+                        <td class="num">{{ "{:,}".format(row.current_value) if row.current_value is not none else '—' }}</td>
                         <td class="num change-{{ 'pos' if row.percent_change and row.percent_change > 0 else ('neg' if row.percent_change and row.percent_change < 0 else 'zero') }}">
                             {% if row.percent_change is not none %}
                                 {{ "{:+.1f}".format(row.percent_change) }}%
@@ -112,14 +116,45 @@
                                 NEW
                             {% endif %}
                         </td>
+                        <td class="num">{{ row.prior_percent_of_portfolio }}%</td>
+                        <td class="num">{{ row.current_percent_of_portfolio }}%</td>
+                        <td class="num change-{{ 'pos' if row.change_in_portfolio_pct > 0 else ('neg' if row.change_in_portfolio_pct < 0 else 'zero') }}">
+                            {{ "{:+.2f}".format(row.change_in_portfolio_pct) }}%
+                        </td>
                         <td>
                             <span class="badge badge-{{ row.status.lower() }}">
                                 {{ row.status }}
                             </span>
                         </td>
                     </tr>
+                    {% endif %}
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    {% for row in comparison %}
+                    {% if row.status == 'TOTAL' %}
+                    <tr class="row-total">
+                        <td class="company-name">{{ row.issuer }}</td>
+                        <td></td>
+                        <td></td>
+                        <td class="num">—</td>
+                        <td class="num">—</td>
+                        <td class="num">—</td>
+                        <td class="num">{{ "{:,}".format(row.prior_value) }}</td>
+                        <td class="num">{{ "{:,}".format(row.current_value) }}</td>
+                        <td class="num change-{{ 'pos' if row.percent_change > 0 else ('neg' if row.percent_change < 0 else 'zero') }}">
+                            {{ "{:+.1f}".format(row.percent_change) }}%
+                        </td>
+                        <td class="num">100.0%</td>
+                        <td class="num">100.0%</td>
+                        <td class="num">0.00%</td>
+                        <td>
+                            <span class="badge badge-unchanged">TOTAL</span>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tfoot>
             </table>
         </div>
 
@@ -172,7 +207,7 @@
                 let bVal = b.cells[colIndex].textContent.trim();
                 
                 // Handle numeric columns
-                if (colIndex >= 3 && colIndex <= 8) {
+                if (colIndex >= 3 && colIndex <= 11) {
                     aVal = parseFloat(aVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
                     bVal = parseFloat(bVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
                     return (aVal - bVal) * sortDirection;

@@ -48,6 +48,10 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
     all_cusips = sorted(set(current.keys()) | set(prior.keys()))
     results = []
     
+    # Calculate total portfolio values first
+    total_current_value = sum((pos.get('value') or 0) for pos in current.values())
+    total_prior_value = sum((pos.get('value') or 0) for pos in prior.values())
+    
     for cusip in all_cusips:
         cur = current.get(cusip)
         prv = prior.get(cusip)
@@ -77,7 +81,7 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
         cur_val = (cur or {}).get("value")
         prv_val = (prv or {}).get("value")
         
-        # Calculate percentage change
+        # Calculate percentage change in value
         if prv_val and prv_val > 0:
             if cur_val:
                 pct_change = ((cur_val - prv_val) / prv_val) * 100
@@ -87,6 +91,11 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
             pct_change = None  # New position (can't calculate % from zero)
         else:
             pct_change = 0.0
+            
+        # Calculate portfolio percentages
+        current_pct = (cur_val / total_current_value * 100) if cur_val and total_current_value else 0.0
+        prior_pct = (prv_val / total_prior_value * 100) if prv_val and total_prior_value else 0.0
+        change_in_portfolio_pct = current_pct - prior_pct
         
         # Build result row
         results.append({
@@ -100,7 +109,27 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
             "current_value": int(cur_val) if cur_val else None,
             "percent_change": round(pct_change, 2) if pct_change is not None else None,
             "status": status,
+            "prior_percent_of_portfolio": round(prior_pct, 2),
+            "current_percent_of_portfolio": round(current_pct, 2),
+            "change_in_portfolio_pct": round(change_in_portfolio_pct, 2),
         })
+    
+    # Add TOTAL row
+    results.append({
+        "cusip": "TOTAL",
+        "issuer": "Total Assets Under Management",
+        "titleOfClass": "",
+        "prior_shares": None,
+        "current_shares": None,
+        "delta_shares": None,
+        "prior_value": int(total_prior_value),
+        "current_value": int(total_current_value),
+        "percent_change": round(((total_current_value - total_prior_value) / total_prior_value * 100), 2) if total_prior_value else 0.0,
+        "status": "TOTAL",
+        "prior_percent_of_portfolio": 100.0,
+        "current_percent_of_portfolio": 100.0,
+        "change_in_portfolio_pct": 0.0,
+    })
     
     return results
 
