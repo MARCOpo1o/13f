@@ -18,21 +18,27 @@ SEC_RATE_LIMIT_PERIOD = 1.0  # seconds
 # Request Timeouts
 REQUEST_TIMEOUT = 30  # seconds
 
+import os
+
 # Application Settings
-DEBUG = False  # Set to False in production
+DEBUG = True  # Set to False in production
 HOST = "0.0.0.0"  # Allow external connections
 PORT = 5000
 
 # Development Settings
-DISABLE_AUTH_IN_DEV = False  # Bypass login when DEBUG=True (local dev only)
+# Check for 'DEV' environment variable
+# Run with: DEV=1 python app.py
+DISABLE_AUTH_IN_DEV = os.environ.get('DEV') == '1'
 
 # Flask Settings
-SECRET_KEY = "phantomfriends-secret-key-2024"  # Used for session encryption
+#Flask Settings
+SECRET_KEY = "dev-random-string-change-in-prod-xyz-123" # Used for session encryption
 
 # Authentication
-# Password hash for login verification (password is NOT stored in plaintext)
+# Password hash for login verification 
 # Original password known only to authorized users
-PASSWORD_HASH = "scrypt:32768:8:1$f3GtbqDsdwPe6gHI$90a8375a17263ea7eb5975f502ca275dcc8fb967a836079d05a5cf5bf854b835f84b71da384853135e0517446f81e9cb71e157a85ec6752b4228c3e6562105c1"
+# Using pbkdf2:sha256 for compatibility
+PASSWORD_HASH = "pbkdf2:sha256:1000000$6fby0KFOwjtF5uTJ$22645a4f24ca69c3fcc4badfbfb60c60009ff4b7fbe5d1c2bcecadae71553d2c"
 
 # Data Display Settings
 MAX_DISPLAY_ROWS = 1000  # Maximum rows to show in results
