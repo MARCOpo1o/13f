@@ -124,7 +124,7 @@ class SECClient:
     
     def get_infotable_url(self, cik: str, accession_number: str) -> str:
         """
-        Construct the InfoTable XML URL for a specific filing.
+        Dynamically find the InfoTable XML URL for a specific filing.
         
         Args:
             cik: Central Index Key
@@ -136,7 +136,40 @@ class SECClient:
         cik_clean = str(cik).lstrip('0')
         accession_clean = accession_number.replace('-', '')
         
-        return f"{config.SEC_ARCHIVES_BASE_URL}/{cik_clean}/{accession_clean}/infotable.xml"
+        base_url = f"{config.SEC_ARCHIVES_BASE_URL}/{cik_clean}/{accession_clean}"
+        
+        # Try to find the correct XML file from the index
+        try:
+            index_url = f"{base_url}/index.json"
+            self._rate_limit()
+            
+            response = self.session.get(index_url, timeout=config.REQUEST_TIMEOUT)
+            if response.status_code == 200:
+                files = response.json().get('directory', {}).get('item', [])
+                
+                # Strategy 1: Look for 'infotable.xml' or similar
+                for file in files:
+                    name = file['name']
+                    if name.lower() == 'infotable.xml':
+                        return f"{base_url}/{name}"
+                
+                # Strategy 2: Look for any XML that isn't the primary document
+                # (Primary doc is usually the cover page)
+                for file in files:
+                    name = file['name']
+                    if name.endswith('.xml') and 'primary' not in name.lower() and 'cover' not in name.lower():
+                        return f"{base_url}/{name}"
+                        
+                # Strategy 3: If only one XML exists, use it
+                xml_files = [f['name'] for f in files if f['name'].endswith('.xml')]
+                if len(xml_files) == 1:
+                    return f"{base_url}/{xml_files[0]}"
+
+        except Exception as e:
+            print(f"Warning: Could not resolve dynamic URL for {accession_number}: {e}")
+        
+        # Fallback: Default to standard naming
+        return f"{base_url}/infotable.xml"
     
     def download_xml(self, url: str) -> Optional[str]:
         """
