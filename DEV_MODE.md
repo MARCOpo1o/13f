@@ -30,7 +30,7 @@ DEBUG = True
 DISABLE_AUTH_IN_DEV = False  # 🔒 Password required (testing auth flow)
 ```
 
-**Result**: Must login with "phantomfriends" to access app
+**Result**: Must login to access app
 
 ---
 

@@ -139,9 +139,16 @@ This app is deployed and running on Vercel with automatic deployments from GitHu
 
 ### Local Development
 
+**Standard Mode (Password Protected):**
 ```bash
 python app.py
 # Visit http://localhost:5000
+```
+
+**Fast Dev Mode (No Password):**
+```bash
+DEV=1 python app.py
+# Visit http://localhost:5000 (Bypasses login)
 ```
 
 ### Deploy Your Own
