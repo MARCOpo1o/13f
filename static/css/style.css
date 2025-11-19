@@ -242,6 +242,19 @@ body {
     border-left: 4px solid #c62828;
 }
 
+/* Dev Mode Banner */
+.dev-banner {
+    background: #fff3cd;
+    color: #856404;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border-left: 4px solid #ffc107;
+    font-weight: 600;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
 /* Metadata Card */
 .metadata-card {
     display: grid;

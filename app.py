@@ -30,9 +30,20 @@ def login_required(f):
     """
     Decorator to protect routes requiring authentication.
     Redirects to login page if user is not authenticated.
+    
+    Can be bypassed in local development when:
+    - DEBUG = True AND
+    - DISABLE_AUTH_IN_DEV = True
+    
+    This never bypasses auth in production (when DEBUG=False).
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        # Bypass auth in local dev if flag is enabled
+        if config.DEBUG and config.DISABLE_AUTH_IN_DEV:
+            return f(*args, **kwargs)
+        
+        # Otherwise require authentication
         if not session.get('authenticated'):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
@@ -84,7 +95,10 @@ def index():
     Returns:
         HTML template with input form and examples
     """
-    return render_template('index.html', examples=config.EXAMPLE_CIKS)
+    dev_mode_no_auth = config.DEBUG and config.DISABLE_AUTH_IN_DEV
+    return render_template('index.html', 
+                         examples=config.EXAMPLE_CIKS,
+                         dev_mode_no_auth=dev_mode_no_auth)
 
 
 @app.route('/compare', methods=['POST'])
@@ -142,11 +156,13 @@ def compare():
         summary = calculate_summary(comparison)
         
         # Render results
+        dev_mode_no_auth = config.DEBUG and config.DISABLE_AUTH_IN_DEV
         return render_template('results.html',
                              cik=cik,
                              comparison=comparison,
                              summary=summary,
-                             metadata=metadata)
+                             metadata=metadata,
+                             dev_mode_no_auth=dev_mode_no_auth)
     
     except Exception as e:
         # Catch-all for unexpected errors

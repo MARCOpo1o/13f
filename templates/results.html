@@ -16,6 +16,12 @@
             <a href="/logout" class="logout-btn">🔓 Logout</a>
         </header>
 
+        {% if dev_mode_no_auth %}
+        <div class="dev-banner">
+            ⚠️ DEV MODE: Authentication disabled for local development
+        </div>
+        {% endif %}
+
         <div class="metadata-card">
             <div class="metadata-item">
                 <span class="label">Current Filing:</span>

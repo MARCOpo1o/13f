@@ -19,9 +19,12 @@ SEC_RATE_LIMIT_PERIOD = 1.0  # seconds
 REQUEST_TIMEOUT = 30  # seconds
 
 # Application Settings
-DEBUG = True  # Set to False in production
+DEBUG = False  # Set to False in production
 HOST = "0.0.0.0"  # Allow external connections
 PORT = 5000
+
+# Development Settings
+DISABLE_AUTH_IN_DEV = False  # Bypass login when DEBUG=True (local dev only)
 
 # Flask Settings
 SECRET_KEY = "phantomfriends-secret-key-2024"  # Used for session encryption
