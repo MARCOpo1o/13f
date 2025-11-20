@@ -61,6 +61,14 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
         prv_shares = prv["shares"] if prv else 0.0
         delta_shares = cur_shares - prv_shares
         
+        # Calculate percentage change in shares
+        if prv_shares > 0:
+            delta_percent_shares = ((cur_shares - prv_shares) / prv_shares) * 100
+        elif cur_shares > 0:
+            delta_percent_shares = None  # New position
+        else:
+            delta_percent_shares = 0.0
+
         # Determine status
         if prv_shares == 0 and cur_shares > 0:
             status = "NEW"
@@ -105,6 +113,7 @@ def compare_filings(current: Dict, prior: Dict) -> List[Dict]:
             "prior_shares": int(prv_shares),
             "current_shares": int(cur_shares),
             "delta_shares": int(delta_shares),
+            "delta_percent_shares": round(delta_percent_shares, 2) if delta_percent_shares is not None else None,
             "prior_value": int(prv_val) if prv_val else None,
             "current_value": int(cur_val) if cur_val else None,
             "percent_change": round(pct_change, 2) if pct_change is not None else None,

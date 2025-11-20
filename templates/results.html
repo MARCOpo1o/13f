@@ -69,11 +69,22 @@
         </div>
 
         <div class="table-controls">
-            <button onclick="filterStatus('all')" class="filter-btn active" data-filter="all">All</button>
-            <button onclick="filterStatus('NEW')" class="filter-btn" data-filter="NEW">New</button>
-            <button onclick="filterStatus('EXITED')" class="filter-btn" data-filter="EXITED">Exited</button>
-            <button onclick="filterStatus('INCREASED')" class="filter-btn" data-filter="INCREASED">Increased</button>
-            <button onclick="filterStatus('DECREASED')" class="filter-btn" data-filter="DECREASED">Decreased</button>
+            <div class="filter-group">
+                <button onclick="filterStatus('all')" class="filter-btn active" data-filter="all">All</button>
+                <button onclick="filterStatus('NEW')" class="filter-btn" data-filter="NEW">New</button>
+                <button onclick="filterStatus('EXITED')" class="filter-btn" data-filter="EXITED">Exited</button>
+                <button onclick="filterStatus('INCREASED')" class="filter-btn" data-filter="INCREASED">Increased</button>
+                <button onclick="filterStatus('DECREASED')" class="filter-btn" data-filter="DECREASED">Decreased</button>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Search company or CUSIP..." class="search-input">
+                <span class="search-icon">🔍</span>
+            </div>
+            
+            <button onclick="downloadCSV()" class="btn-secondary" style="margin-left: 10px;">
+                📥 CSV
+            </button>
         </div>
 
         <div class="table-container">
@@ -85,14 +96,15 @@
                         <th onclick="sortTable(2)">CUSIP</th>
                         <th onclick="sortTable(3)" class="num">Prior Shares ↕</th>
                         <th onclick="sortTable(4)" class="num">Current Shares ↕</th>
-                        <th onclick="sortTable(5)" class="num">Change ↕</th>
-                        <th onclick="sortTable(6)" class="num">Prior Value ($K) ↕</th>
-                        <th onclick="sortTable(7)" class="num">Current Value ($K) ↕</th>
-                        <th onclick="sortTable(8)" class="num">% Change ↕</th>
-                        <th onclick="sortTable(9)" class="num">Prior % PF ↕</th>
-                        <th onclick="sortTable(10)" class="num">Curr % PF ↕</th>
-                        <th onclick="sortTable(11)" class="num">Δ % PF ↕</th>
-                        <th onclick="sortTable(12)">Status ↕</th>
+                        <th onclick="sortTable(5)" class="num">Δ Shares ↕</th>
+                        <th onclick="sortTable(6)" class="num">Δ % Shares ↕</th>
+                        <th onclick="sortTable(7)" class="num">Prior Value ($K) ↕</th>
+                        <th onclick="sortTable(8)" class="num">Current Value ($K) ↕</th>
+                        <th onclick="sortTable(9)" class="num">% Change ↕</th>
+                        <th onclick="sortTable(10)" class="num">Prior % PF ↕</th>
+                        <th onclick="sortTable(11)" class="num">Curr % PF ↕</th>
+                        <th onclick="sortTable(12)" class="num">Δ % PF ↕</th>
+                        <th onclick="sortTable(13)">Status ↕</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -106,6 +118,15 @@
                         <td class="num">{{ "{:,}".format(row.current_shares) if row.current_shares is not none else '—' }}</td>
                         <td class="num change-{{ 'pos' if row.delta_shares and row.delta_shares > 0 else ('neg' if row.delta_shares and row.delta_shares < 0 else 'zero') }}">
                             {{ "{:+,}".format(row.delta_shares) if row.delta_shares is not none else '—' }}
+                        </td>
+                        <td class="num change-{{ 'pos' if row.delta_percent_shares and row.delta_percent_shares > 0 else ('neg' if row.delta_percent_shares and row.delta_percent_shares < 0 else 'zero') }}">
+                            {% if row.delta_percent_shares is not none %}
+                                {{ "{:+.1f}".format(row.delta_percent_shares) }}%
+                            {% elif row.status == 'NEW' %}
+                                NEW
+                            {% else %}
+                                —
+                            {% endif %}
                         </td>
                         <td class="num">{{ "{:,}".format(row.prior_value) if row.prior_value is not none else '—' }}</td>
                         <td class="num">{{ "{:,}".format(row.current_value) if row.current_value is not none else '—' }}</td>
@@ -140,6 +161,7 @@
                         <td class="num">—</td>
                         <td class="num">—</td>
                         <td class="num">—</td>
+                        <td class="num">—</td>
                         <td class="num">{{ "{:,}".format(row.prior_value) }}</td>
                         <td class="num">{{ "{:,}".format(row.current_value) }}</td>
                         <td class="num change-{{ 'pos' if row.percent_change > 0 else ('neg' if row.percent_change < 0 else 'zero') }}">
@@ -169,17 +191,73 @@
     </div>
 
     <script>
+        // Debounce function to prevent UI freeze on large tables
+        function debounce(func, wait) {
+            let timeout;
+            return function() {
+                const context = this;
+                const args = arguments;
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(context, args), wait);
+            };
+        }
+
+        // Search function
+        const searchTable = debounce(function() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toUpperCase();
+            const table = document.getElementById('results-table');
+            const tbody = table.querySelector('tbody');
+            const tr = tbody.getElementsByTagName('tr');
+
+            // Hide table during heavy DOM updates to prevent reflows
+            tbody.style.display = 'none';
+
+            for (let i = 0; i < tr.length; i++) {
+                const companyTd = tr[i].getElementsByTagName("td")[0];
+                const cusipTd = tr[i].getElementsByTagName("td")[2];
+                
+                if (companyTd && cusipTd) {
+                    const companyTxt = companyTd.textContent || companyTd.innerText;
+                    const cusipTxt = cusipTd.textContent || cusipTd.innerText;
+                    
+                    if (companyTxt.toUpperCase().indexOf(filter) > -1 || cusipTxt.toUpperCase().indexOf(filter) > -1) {
+                        // Only show if it also matches the current status filter
+                        if (currentFilter === 'all' || tr[i].classList.contains('status-' + currentFilter)) {
+                            tr[i].style.display = "";
+                        } else {
+                            tr[i].style.display = "none";
+                        }
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+            
+            // Restore display
+            tbody.style.display = '';
+        }, 300);
+
         // Filter table by status
         let currentFilter = 'all';
         function filterStatus(status) {
             currentFilter = status;
             const rows = document.querySelectorAll('#results-table tbody tr');
+            const searchInput = document.getElementById('searchInput').value.toUpperCase();
             
             rows.forEach(row => {
+                const companyTd = row.getElementsByTagName("td")[0];
+                const cusipTd = row.getElementsByTagName("td")[2];
+                const companyTxt = companyTd.textContent || companyTd.innerText;
+                const cusipTxt = cusipTd.textContent || cusipTd.innerText;
+                const matchesSearch = searchInput === '' || 
+                                    companyTxt.toUpperCase().indexOf(searchInput) > -1 || 
+                                    cusipTxt.toUpperCase().indexOf(searchInput) > -1;
+
                 if (status === 'all') {
-                    row.style.display = '';
+                    row.style.display = matchesSearch ? '' : 'none';
                 } else {
-                    row.style.display = row.classList.contains('status-' + status) ? '' : 'none';
+                    row.style.display = (row.classList.contains('status-' + status) && matchesSearch) ? '' : 'none';
                 }
             });
 
@@ -207,7 +285,7 @@
                 let bVal = b.cells[colIndex].textContent.trim();
                 
                 // Handle numeric columns
-                if (colIndex >= 3 && colIndex <= 11) {
+                if (colIndex >= 3 && colIndex <= 12) {
                     aVal = parseFloat(aVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
                     bVal = parseFloat(bVal.replace(/[,+%]/g, '').replace('—', '0')) || 0;
                     return (aVal - bVal) * sortDirection;
@@ -222,7 +300,71 @@
             // Re-append rows in new order
             visibleRows.forEach(row => tbody.appendChild(row));
         }
+
+        // Download CSV function
+        function downloadCSV() {
+            const table = document.getElementById("results-table");
+            // Use Array.from to get all rows including the header
+            const rows = Array.from(table.querySelectorAll("tr"));
+            
+            // Filter out hidden rows (if you only want to download visible filtered results)
+            // const visibleRows = rows.filter(row => row.style.display !== 'none');
+            // For now, let's download EVERYTHING regardless of filter, or just visible?
+            // Usually users expect "what I see is what I get", but for data export, all data is often better.
+            // Let's stick to "All Data" to ensure completeness, but we can switch to visibleRows if preferred.
+            
+            let csv = [];
+            
+            // Get Headers
+            const headerRow = table.querySelector("thead tr");
+            const headers = Array.from(headerRow.querySelectorAll("th")).map(th => {
+                return '"' + th.innerText.replace(' ↕', '').trim() + '"';
+            });
+            csv.push(headers.join(","));
+
+            // Get Data
+            // Skip the first row as it's the header in querySelectorAll("tr") if we selected from table
+            // Actually querySelectorAll("tr") includes thead tr. 
+            // Let's select only tbody rows and tfoot rows.
+            
+            const bodyRows = Array.from(table.querySelectorAll("tbody tr"));
+            const footerRows = Array.from(table.querySelectorAll("tfoot tr"));
+            const allDataRows = [...bodyRows, ...footerRows];
+
+            allDataRows.forEach(row => {
+                // Skip if display is none (filtered out) - Uncomment next line to only download visible
+                // if (row.style.display === 'none') return;
+
+                const cols = row.querySelectorAll("td");
+                let rowData = [];
+                
+                cols.forEach(col => {
+                    // Get text, remove newlines and extra whitespace
+                    let data = col.innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
+                    // Escape double quotes
+                    data = data.replace(/"/g, '""');
+                    rowData.push('"' + data + '"');
+                });
+                csv.push(rowData.join(","));
+            });
+
+            const csvString = csv.join("\n");
+            const cik = "{{ cik }}";
+            const filename = `13F_Comparison_CIK_${cik}.csv`;
+            
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            
+            if (navigator.msSaveBlob) { // IE 10+
+                navigator.msSaveBlob(blob, filename);
+            } else {
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
     </script>
 </body>
 </html>
-

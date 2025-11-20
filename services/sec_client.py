@@ -14,6 +14,7 @@ import requests
 from typing import List, Dict, Optional
 import sys
 import os
+from functools import lru_cache
 
 # Add parent directory to path for config import
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -191,9 +192,11 @@ class SECClient:
             print(f"Error downloading XML from {url}: {e}")
             return None
     
+    @lru_cache(maxsize=32)
     def get_fund_filings(self, cik: str) -> tuple[Optional[str], Optional[str], Optional[Dict]]:
         """
         Get the latest two 13F InfoTable XML files for a fund.
+        Cached to improve performance for repeated searches.
         
         This is the main method that combines all steps:
         1. Get latest 2 filing metadata

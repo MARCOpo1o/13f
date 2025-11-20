@@ -25,6 +25,9 @@ import config
 app = Flask(__name__)
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
+# Initialize SEC client globally to enable connection reuse and caching
+sec_client = SECClient()
+
 
 def login_required(f):
     """
@@ -130,11 +133,11 @@ def compare():
                              examples=config.EXAMPLE_CIKS)
     
     try:
-        # Initialize SEC client
-        client = SECClient()
+        # Use global SEC client
+        # client = SECClient()  <-- REMOVED: This was causing performance issues
         
         # Fetch filings
-        current_xml, prior_xml, metadata = client.get_fund_filings(cik)
+        current_xml, prior_xml, metadata = sec_client.get_fund_filings(cik)
         
         if not current_xml or not prior_xml:
             return render_template('index.html',
@@ -184,11 +187,11 @@ def api_compare(cik):
         JSON response with comparison data or error
     """
     try:
-        # Initialize SEC client
-        client = SECClient()
+        # Use global SEC client
+        # client = SECClient() <-- REMOVED
         
         # Fetch filings
-        current_xml, prior_xml, metadata = client.get_fund_filings(cik)
+        current_xml, prior_xml, metadata = sec_client.get_fund_filings(cik)
         
         if not current_xml or not prior_xml:
             return jsonify({
